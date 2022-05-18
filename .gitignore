@@ -9,6 +9,7 @@ npm-debug.*
 *.mobileprovision
 *.orig.*
 web-build/
+PostsBackup.txt
 
 # macOS
 .DS_Store
