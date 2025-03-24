@@ -1,14 +1,11 @@
-import React from 'react'
+import React from 'react';
 import {
   Text,
   View,
   FlatList,
-  Image,
-  TouchableOpacity 
-} from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-
-import styles from './styles'
+  StyleSheet
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const Messenger = () => {
   const postData = [
@@ -52,17 +49,26 @@ const Messenger = () => {
         <Text>Messenger</Text>
       </View>
     )
-  }
+  };
 
   return (
     <View style={styles.container}>
       <FlatList
         data={postData}
-        keyExtractor={(item)=> {item.id}}
+        keyExtractor={(item)=> item.id}
         renderItem={renderItem}
       />
     </View>
   )
-}
+};
 
-export default Messenger
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+});
+
+export default Messenger;

@@ -1,68 +1,151 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
 import {
-  Text,
   View,
+  Text,
   FlatList,
   Image,
-  TouchableOpacity 
-} from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+  Dimensions,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+  Platform
+} from 'react-native';
+import { collection, getDocs, query, orderBy, limit, startAfter } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
-import styles from './styles'
+const { height: windowHeight, width } = Dimensions.get('window');
+const TAB_BAR_HEIGHT = 50;
+const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : 24;
+const EXTRA_PADDING = 16;
+const availableHeight = windowHeight - TAB_BAR_HEIGHT - STATUS_BAR_HEIGHT - EXTRA_PADDING;
 
 const Infinite = () => {
-  const postData = [
-    {
-      id: '1',
-      author: 'gustavofalcao1',
-      authorProfile: 'https://t3.ftcdn.net/jpg/03/91/19/22/360_F_391192211_2w5pQpFV1aozYQhcIw3FqA35vuTxJKrB.jpg',
-      place: 'Porto Cinema',
-      pictureUrl: 'https://assets.papelpop.com/wp-content/uploads/2019/08/Captura-de-Tela-2019-08-15-a%CC%80s-09.42.37.png',
-      likesCount: '300',
-      postTime: '5',
-      description: 'I want see this filmasdasdasdasd ahsgdkahsasd',
-      comment: 'I am too'
-    },
-    {
-      id: '2',
-      author: 'agathasantos50',
-      authorProfile: 'https://t3.ftcdn.net/jpg/03/91/19/22/360_F_391192211_2w5pQpFV1aozYQhcIw3FqA35vuTxJKrB.jpg',
-      place: 'Agatha House',
-      pictureUrl: 'https://observatoriodocinema.uol.com.br/wp-content/uploads/2020/05/riverdale-season-3-poster-1280x720-1.jpg',
-      likesCount: '20',
-      postTime: '1',
-      description: 'The best serie of Netflix',
-      comment: 'It is true'
-    },
-    {
-      id: '3',
-      author: 'atelie.amorempano',
-      authorProfile: 'https://t3.ftcdn.net/jpg/03/91/19/22/360_F_391192211_2w5pQpFV1aozYQhcIw3FqA35vuTxJKrB.jpg',
-      place: 'Atelie Amor em Pano Store',
-      pictureUrl: 'https://hips.hearstapps.com/hmg-prod.s3.amazonaws.com/images/white-kitchen-1-1537194316.jpg',
-      likesCount: '10',
-      postTime: '10',
-      description: 'Awasome kitchen',
-      comment: 'My dream'
+  const [reels, setReels] = useState([]);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastVisible, setLastVisible] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
+
+  useEffect(() => {
+    loadInitialPosts();
+  }, []);
+
+  const loadInitialPosts = async () => {
+    try {
+      const q = query(
+        collection(db, 'Posts'),
+        orderBy('postTime', 'desc'),
+        limit(5)
+      );
+      const snapshot = await getDocs(q);
+      const fetched = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(doc => doc.type === 'infinite');
+      setReels(fetched);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      setHasMore(snapshot.docs.length === 5);
+    } catch (error) {
+      console.error('Error loading initial posts:', error);
     }
-  ]
-  const renderItem = ({item}) => {
-    return (
-      <View>
-        <Text>Infinite</Text>
+  };
+
+  const loadMorePosts = async () => {
+    if (!lastVisible || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const q = query(
+        collection(db, 'Posts'),
+        orderBy('postTime', 'desc'),
+        startAfter(lastVisible),
+        limit(5)
+      );
+      const snapshot = await getDocs(q);
+      const more = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(doc => doc.type === 'infinite');
+      if (more.length > 0) {
+        setReels(prev => [...prev, ...more]);
+        setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+        setHasMore(snapshot.docs.length === 5);
+      } else {
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('Error loading more posts:', error);
+    }
+    setLoadingMore(false);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadInitialPosts();
+    setRefreshing(false);
+  };
+
+  const renderItem = ({ item }) => (
+    <View style={styles.reelContainer}>
+      <Image source={{ uri: item.pictureUrl }} style={styles.image} />
+      <View style={styles.overlay}>
+        <Text style={styles.author}>@{item.author}</Text>
+        <Text style={styles.description}>{item.description}</Text>
       </View>
-    )
-  }
+    </View>
+  );
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={postData}
-        keyExtractor={(item)=> {item.id}}
+        data={reels}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        onEndReached={loadMorePosts}
+        onEndReachedThreshold={0.5}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListFooterComponent={loadingMore ? <ActivityIndicator color="#00CC10" style={{ margin: 20 }} /> : null}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        snapToInterval={availableHeight}
+        getItemLayout={(data, index) => (
+          { length: availableHeight, offset: availableHeight * index, index }
+        )}
+        ListEmptyComponent={<Text style={{ color: '#fff', textAlign: 'center', marginTop: 20 }}>No posts found.</Text>}
       />
     </View>
-  )
-}
+  );
+};
 
-export default Infinite
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  reelContainer: {
+    height: availableHeight,
+    width: width,
+    justifyContent: 'flex-end',
+    position: 'relative',
+  },
+  image: {
+    ...StyleSheet.absoluteFillObject,
+    resizeMode: 'cover',
+  },
+  overlay: {
+    padding: 16,
+    paddingBottom: TAB_BAR_HEIGHT + EXTRA_PADDING,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  author: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  description: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 6,
+  },
+});
+
+export default Infinite;

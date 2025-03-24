@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Social",
-    "slug": "Social",
-    "version": "1.0.0",
+    "name": "OmniSocial",
+    "slug": "OmniSocial",
+    "version": "0.0.12",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -27,6 +27,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "newArchEnabled": true
   }
 }

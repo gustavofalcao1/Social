@@ -1,68 +1,139 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react';
 import {
   Text,
   View,
   FlatList,
+  TextInput,
+  StyleSheet,
   Image,
-  TouchableOpacity 
-} from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+  TouchableOpacity
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
-import styles from './styles'
+const PRIMARY_COLOR = '#00CC10';
 
 const Search = () => {
-  const postData = [
-    {
-      id: '1',
-      author: 'gustavofalcao1',
-      authorProfile: 'https://t3.ftcdn.net/jpg/03/91/19/22/360_F_391192211_2w5pQpFV1aozYQhcIw3FqA35vuTxJKrB.jpg',
-      place: 'Porto Cinema',
-      pictureUrl: 'https://assets.papelpop.com/wp-content/uploads/2019/08/Captura-de-Tela-2019-08-15-a%CC%80s-09.42.37.png',
-      likesCount: '300',
-      postTime: '5',
-      description: 'I want see this filmasdasdasdasd ahsgdkahsasd',
-      comment: 'I am too'
-    },
-    {
-      id: '2',
-      author: 'agathasantos50',
-      authorProfile: 'https://t3.ftcdn.net/jpg/03/91/19/22/360_F_391192211_2w5pQpFV1aozYQhcIw3FqA35vuTxJKrB.jpg',
-      place: 'Agatha House',
-      pictureUrl: 'https://observatoriodocinema.uol.com.br/wp-content/uploads/2020/05/riverdale-season-3-poster-1280x720-1.jpg',
-      likesCount: '20',
-      postTime: '1',
-      description: 'The best serie of Netflix',
-      comment: 'It is true'
-    },
-    {
-      id: '3',
-      author: 'atelie.amorempano',
-      authorProfile: 'https://t3.ftcdn.net/jpg/03/91/19/22/360_F_391192211_2w5pQpFV1aozYQhcIw3FqA35vuTxJKrB.jpg',
-      place: 'Atelie Amor em Pano Store',
-      pictureUrl: 'https://hips.hearstapps.com/hmg-prod.s3.amazonaws.com/images/white-kitchen-1-1537194316.jpg',
-      likesCount: '10',
-      postTime: '10',
-      description: 'Awasome kitchen',
-      comment: 'My dream'
-    }
-  ]
-  const renderItem = ({item}) => {
-    return (
-      <View>
-        <Text>Search</Text>
+  const [searchTerm, setSearchTerm] = useState('');
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    const postsRef = collection(db, 'Posts');
+    const unsubscribe = onSnapshot(postsRef, (snapshot) => {
+      const allPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setResults(allPosts);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const filteredResults = results.filter(post =>
+    post.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.place.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const renderItem = ({ item }) => (
+    <View style={styles.card}>
+      <View style={styles.header}>
+        <Image source={{ uri: item.authorProfile }} style={styles.avatar} />
+        <View style={styles.userInfo}>
+          <Text style={styles.author}>{item.author}</Text>
+          <Text style={styles.place}>{item.place}</Text>
+        </View>
       </View>
-    )
-  }
+      <Image source={{ uri: item.pictureUrl }} style={styles.postImage} />
+      <View style={styles.footer}>
+        <Text style={styles.likes}>{item.likesCount} likes</Text>
+        <Text style={styles.description}><Text style={styles.bold}>{item.author}</Text> {item.description}</Text>
+        <Text style={styles.comment}>{item.comment}</Text>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        placeholder="Buscar por autor, local ou descrição"
+        value={searchTerm}
+        onChangeText={setSearchTerm}
+        placeholderTextColor="#888"
+      />
       <FlatList
-        data={postData}
-        keyExtractor={(item)=> {item.id}}
+        data={filteredResults}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
       />
     </View>
-  )
-}
+  );
+};
 
-export default Search
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+    fontSize: 16,
+  },
+  card: {
+    marginBottom: 20,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 10,
+    overflow: 'hidden',
+    elevation: 2,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  userInfo: {
+    marginLeft: 10,
+  },
+  author: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  place: {
+    fontSize: 12,
+    color: '#666',
+  },
+  postImage: {
+    width: '100%',
+    height: 200,
+  },
+  footer: {
+    padding: 10,
+  },
+  likes: {
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  description: {
+    marginBottom: 4,
+  },
+  bold: {
+    fontWeight: 'bold',
+  },
+  comment: {
+    color: '#444',
+    fontStyle: 'italic',
+    marginBottom: 6,
+  }
+});
+
+export default Search;

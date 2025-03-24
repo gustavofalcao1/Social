@@ -11,5 +11,7 @@ npm-debug.*
 web-build/
 PostsBackup.txt
 
+*.lock
+package-lock.json
 # macOS
 .DS_Store
