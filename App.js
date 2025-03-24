@@ -17,7 +17,7 @@ import Messenger from './src/screens/Messenger'
 
 import logo from './assets/img/logo.png'
 
-import MessengerBtn from './src/componentes/MessagerBTN'
+import MessengerBtn from './src/components/MessagerBTN'
 
 const Theme = {
   ...DefaultTheme,
