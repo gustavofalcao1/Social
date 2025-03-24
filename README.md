@@ -48,6 +48,16 @@ Scan the QR code with Expo Go app on your Android or iOS device.
 
 ---
 
+## 📸 Screenshots
+
+| Feed Screen | Search Screen | Add Post Screen |
+|-----------------------|----------------|-----------|
+| ![Feed](./screenshots/00.png) | ![Search](./screenshots/01.png) | ![Add Post](./screenshots/02.png) |
+| Infinite Screen | Profile Screen |
+| ![Infinite](./screenshots/03.png) | ![Profile](./screenshots/04.png) 
+
+---
+
 ## 🤝 Contributing
 
 Your contributions to improve and expand this project are welcomed:
