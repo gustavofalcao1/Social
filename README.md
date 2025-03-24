@@ -20,7 +20,7 @@
 - **Expo**
 - **Firebase** (planned integration)
 - **Yarn**
-- **Node.js 16**
+- **Node.js 22**
 
 ---
 
